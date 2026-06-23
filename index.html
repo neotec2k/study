@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>과제 관리 시스템</title>
+  <meta name="description" content="협력사 과제를 등록하고 개선금액 및 목표월을 체계적으로 관리하는 시스템입니다." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Dark Theme (Default) */
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2330;
+      --border: rgba(255,255,255,0.08);
+      --text: #e6edf3;
+      --text-muted: #7d8590;
+      --text-dim: #4d5561;
+      
+      --accent: #3b82f6;
+      --accent2: #6366f1;
+      --accent-glow: rgba(59,130,246,0.35);
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
+      
+      --gradient-overlay1: rgba(59,130,246,0.15);
+      --gradient-overlay2: rgba(99,102,241,0.12);
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface2: #f1f5f9;
+      --border: rgba(0,0,0,0.1);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      
+      --shadow: 0 8px 30px rgba(0,0,0,0.06);
+      --shadow-lg: 0 20px 60px rgba(0,0,0,0.1);
+      
+      --gradient-overlay1: rgba(59,130,246,0.08);
+      --gradient-overlay2: rgba(99,102,241,0.05);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Background Gradient */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, var(--gradient-overlay1) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, var(--gradient-overlay2) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 24px 60px; }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+      gap: 16px;
+      transition: border-color 0.3s;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 16px; }
+
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 22px;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .header-title h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--text), #7dd3fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .header-title p { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--accent-glow); }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--surface); border-color: rgba(150,150,150,0.3); }
+    .btn-danger { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+    .btn-icon { padding: 8px; border-radius: var(--radius-sm); font-size: 1.1rem; }
+
+    /* Hidden file input */
+    #excel-upload-input { display: none; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, border-color 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.blue::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .stat-card.green::before { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .stat-card.yellow::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .stat-card.purple::before { background: linear-gradient(90deg, #a855f7, #7c3aed); }
+
+    .stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; }
+    .stat-value.blue { color: var(--accent); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.yellow { color: var(--yellow); }
+    .stat-value.purple { color: #a855f7; }
+    .stat-sub { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+
+    /* Chart Section */
+    .chart-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+      height: 300px;
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .panel-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.95rem; font-weight: 700;
+    }
+    .panel-title .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    /* Forms */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    label .req { color: var(--accent); margin-left: 2px; }
+
+    input, select, textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s;
+      outline: none;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-dim); }
+    textarea { resize: vertical; min-height: 70px; }
+    select option { background: var(--surface2); color: var(--text); }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box { position: relative; flex: 1; min-width: 200px; }
+    .search-box input { padding-left: 38px; }
+    .search-box .icon {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 15px;
+      pointer-events: none;
+    }
+    .filter-select { min-width: 120px; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    thead th:hover { color: var(--text); }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.4; transition: opacity 0.2s; }
+    thead th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s, opacity 0.3s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(59,130,246,0.04); }
+    
+    /* Completed task styling */
+    tbody tr.task-completed {
+      opacity: 0.5;
+      background: rgba(0,0,0,0.02);
+    }
+    [data-theme="light"] tbody tr.task-completed { background: rgba(0,0,0,0.03); }
+    tbody tr.task-completed .td-project { text-decoration: line-through; }
+
+    td { padding: 14px 16px; vertical-align: middle; color: var(--text); }
+
+    .td-company { font-weight: 600; color: #93c5fd; }
+    [data-theme="light"] .td-company { color: #2563eb; }
+    .td-project { font-weight: 500; }
+    .td-amount { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--green); }
+    .td-note { color: var(--text-muted); font-size: 0.82rem; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-blue { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+    [data-theme="light"] .badge-blue { color: #2563eb; }
+    
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;
+      min-width: 60px;
+    }
+    .status-pending { background: rgba(100,116,139,0.2); color: #94a3b8; }
+    [data-theme="light"] .status-pending { color: #475569; }
+    .status-progress { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    [data-theme="light"] .status-progress { color: #2563eb; }
+    .status-done { background: rgba(34,197,94,0.2); color: #4ade80; }
+    [data-theme="light"] .status-done { color: #16a34a; }
+
+    .action-btns { display: flex; gap: 6px; }
+
+    /* Empty State */
+    .empty-state { text-align: center; padding: 64px 24px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-state h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    .empty-state p { font-size: 0.85rem; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%; max-width: 580px;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95) translateY(8px);
+      transition: transform 0.25s;
+    }
+    .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-size: 1rem; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 20px;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* Toast Container */
+    #toast-container {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 2000;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+      max-width: 280px;
+      color: var(--text);
+    }
+    .toast.success { border-left-color: var(--green); }
+    .toast.error { border-left-color: var(--red); }
+
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-title h1 { font-size: 1.2rem; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo-icon">📋</div>
+      <div class="header-title">
+        <h1>과제 관리 시스템</h1>
+        <p>협력사 개선 과제를 등록하고 체계적으로 관리합니다</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <!-- Theme Toggle -->
+      <button class="btn btn-secondary btn-icon" id="btn-theme" onclick="toggleTheme()" title="다크/라이트 모드 전환">☀️</button>
+      
+      <!-- Excel Upload -->
+      <input type="file" id="excel-upload-input" accept=".xlsx, .xls" onchange="handleExcelUpload(event)" />
+      <button class="btn btn-secondary" onclick="document.getElementById('excel-upload-input').click()">📤 엑셀 업로드</button>
+      
+      <button class="btn btn-secondary" onclick="exportCSV()">⬇ CSV 내보내기</button>
+      <button class="btn btn-primary" onclick="openAddModal()">＋ 과제 등록</button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-label">전체 과제</div>
+      <div class="stat-value blue" id="stat-total">0</div>
+      <div class="stat-sub">등록된 과제 수</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">총 개선금액</div>
+      <div class="stat-value green" id="stat-amount">0</div>
+      <div class="stat-sub">단위: 만원</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">협력사 수</div>
+      <div class="stat-value yellow" id="stat-companies">0</div>
+      <div class="stat-sub">참여 협력사</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">완료율</div>
+      <div class="stat-value purple" id="stat-completion">0%</div>
+      <div class="stat-sub">완료된 과제 비율</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-container">
+    <canvas id="monthlyChart"></canvas>
+  </div>
+
+  <!-- List Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="dot"></span>
+        과제 목록
+      </div>
+      <div class="filter-bar">
+        <div class="search-box">
+          <span class="icon">🔍</span>
+          <input type="text" id="search-input" placeholder="협력사명 또는 과제명 검색..." oninput="renderTable()" />
+        </div>
+        <select class="filter-select" id="filter-status" onchange="renderTable()">
+          <option value="">전체 상태</option>
+          <option value="진행 전">진행 전</option>
+          <option value="진행 중">진행 중</option>
+          <option value="완료">완료</option>
+        </select>
+        <select class="filter-select" id="filter-company" onchange="renderTable()">
+          <option value="">전체 협력사</option>
+        </select>
+        <select class="filter-select" id="filter-month" onchange="renderTable()">
+          <option value="">전체 목표월</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="task-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('status')" id="th-status">상태 <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('company')" id="th-company">협력사명 <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('project')" id="th-project">과제명 <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('amount')" id="th-amount">개선금액(만원) <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('month')" id="th-month">목표월 <span class="sort-icon">↕</span></th>
+            <th>비고</th>
+            <th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="task-tbody"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none">
+        <div class="icon">📂</div>
+        <h3>등록된 과제가 없습니다</h3>
+        <p>상단의 '과제 등록' 또는 '엑셀 업로드' 버튼을 눌러 데이터를 추가해보세요.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">과제 등록</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="f-company">협력사명 <span class="req">*</span></label>
+          <input type="text" id="f-company" placeholder="예) LG전자 협력사" maxlength="50" />
+        </div>
+        <div class="form-group">
+          <label for="f-project">과제명 <span class="req">*</span></label>
+          <input type="text" id="f-project" placeholder="예) 부품 원가 절감" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label for="f-amount">개선금액 (만원) <span class="req">*</span></label>
+          <input type="number" id="f-amount" placeholder="예) 5000" min="0" step="1" />
+        </div>
+        <div class="form-group">
+          <label for="f-month">목표월 <span class="req">*</span></label>
+          <input type="month" id="f-month" />
+        </div>
+        <div class="form-group">
+          <label for="f-status">진행 상태 <span class="req">*</span></label>
+          <select id="f-status">
+            <option value="진행 전">진행 전</option>
+            <option value="진행 중">진행 중</option>
+            <option value="완료">완료</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label for="f-note">비고</label>
+          <textarea id="f-note" placeholder="추가 메모나 특이사항을 입력하세요..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" id="modal-submit-btn" onclick="submitTask()">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title">과제 삭제</div>
+      <button class="modal-close" onclick="closeConfirm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.7">
+        선택한 과제를 삭제하시겠습니까?<br/>
+        <strong style="color:var(--text)" id="confirm-task-name"></strong><br/>
+        이 작업은 되돌릴 수 없습니다.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfirm()">취소</button>
+      <button class="btn btn-danger" id="confirm-delete-btn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  let tasks = [];
+  let editingId = null;
+  let deleteId  = null;
+  let sortField = 'month';
+  let sortDir   = 'asc';
+  let chartInstance = null;
+
+  // Theme Toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const btn = document.getElementById('btn-theme');
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    btn.textContent = isDark ? '🌙' : '☀️';
+    
+    // Update chart colors based on theme
+    if(chartInstance) {
+      updateChartColors();
+    }
+  }
+
+  // Fetch Data from API
+  async function loadTasks() {
+    try {
+      const res = await fetch('/api/tasks');
+      if (res.ok) {
+        tasks = await res.json();
+        renderTable();
+      } else {
+        toast('데이터를 불러오는데 실패했습니다.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('서버에 연결할 수 없습니다.', 'error');
+    }
+  }
+
+  // Stats
+  function updateStats() {
+    const total = tasks.length;
+    const sum = tasks.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const cos = new Set(tasks.map(t => t.company)).size;
+    const completed = tasks.filter(t => t.status === '완료').length;
+    const completionRate = total ? Math.round((completed / total) * 100) : 0;
+    
+    document.getElementById('stat-total').textContent = total.toLocaleString();
+    document.getElementById('stat-amount').textContent = sum.toLocaleString();
+    document.getElementById('stat-companies').textContent = cos.toLocaleString();
+    document.getElementById('stat-completion').textContent = completionRate + '%';
+  }
+
+  // Filters
+  function updateFilters() {
+    const companies = [...new Set(tasks.map(t => t.company))].filter(Boolean).sort();
+    const months    = [...new Set(tasks.map(t => t.month))].filter(Boolean).sort();
+
+    const fcSel = document.getElementById('filter-company');
+    const fmSel = document.getElementById('filter-month');
+    const fcVal = fcSel.value;
+    const fmVal = fmSel.value;
+
+    fcSel.innerHTML = '<option value="">전체 협력사</option>' +
+      companies.map(c => `<option value="${esc(c)}" ${c===fcVal?'selected':''}>${esc(c)}</option>`).join('');
+    fmSel.innerHTML = '<option value="">전체 목표월</option>' +
+      months.map(m => `<option value="${esc(m)}" ${m===fmVal?'selected':''}>${esc(m)}</option>`).join('');
+  }
+
+  // Render Table
+  function renderTable() {
+    const q  = document.getElementById('search-input').value.trim().toLowerCase();
+    const fc = document.getElementById('filter-company').value;
+    const fm = document.getElementById('filter-month').value;
+    const fs = document.getElementById('filter-status').value;
+
+    let filtered = tasks.filter(t => {
+      const matchQ  = !q || (t.company && t.company.toLowerCase().includes(q)) || (t.project && t.project.toLowerCase().includes(q));
+      const matchC  = !fc || t.company === fc;
+      const matchM  = !fm || t.month === fm;
+      const matchS  = !fs || t.status === fs;
+      return matchQ && matchC && matchM && matchS;
+    });
+
+    filtered.sort((a, b) => {
+      let av = a[sortField] ?? '';
+      let bv = b[sortField] ?? '';
+      
+      // Status custom sort
+      if (sortField === 'status') {
+        const order = { '진행 전': 1, '진행 중': 2, '완료': 3 };
+        av = order[av] || 0;
+        bv = order[bv] || 0;
+      } else if (sortField === 'amount') { 
+        av = Number(av); bv = Number(bv); 
+      }
+      
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    const tbody = document.getElementById('task-tbody');
+    const empty = document.getElementById('empty-state');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = '';
+    } else {
+      empty.style.display = 'none';
+      tbody.innerHTML = filtered.map(t => {
+        const isDone = t.status === '완료';
+        let statusClass = 'status-pending';
+        if(t.status === '진행 중') statusClass = 'status-progress';
+        if(t.status === '완료') statusClass = 'status-done';
+        
+        return `
+        <tr data-id="${t.id}" class="${isDone ? 'task-completed' : ''}">
+          <td><span class="status-badge ${statusClass}">${esc(t.status)}</span></td>
+          <td class="td-company">${esc(t.company)}</td>
+          <td class="td-project">${esc(t.project)}</td>
+          <td class="td-amount">₩ ${Number(t.amount).toLocaleString()}</td>
+          <td><span class="badge badge-blue">${esc(t.month)}</span></td>
+          <td class="td-note" title="${esc(t.note)}">${esc(t.note) || '<span style="color:var(--text-dim)">-</span>'}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-secondary btn-sm" onclick="openEditModal(${t.id})">✏ 수정</button>
+              <button class="btn btn-danger btn-sm" onclick="openConfirm(${t.id})">🗑 삭제</button>
+            </div>
+          </td>
+        </tr>
+      `}).join('');
+    }
+
+    updateFilters();
+    updateStats();
+    renderChart();
+  }
+
+  function sortTable(field) {
+    if (sortField === field) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+    else { sortField = field; sortDir = 'asc'; }
+    document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+    const thMap = { company:'th-company', project:'th-project', amount:'th-amount', month:'th-month', status:'th-status' };
+    if (thMap[field]) document.getElementById(thMap[field]).classList.add('sorted');
+    renderTable();
+  }
+
+  // Modals
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modal-title').textContent = '과제 등록';
+    document.getElementById('modal-submit-btn').textContent = '등록';
+    clearForm();
+    document.getElementById('task-modal').classList.add('open');
+  }
+
+  function openEditModal(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    editingId = id;
+    document.getElementById('modal-title').textContent = '과제 수정';
+    document.getElementById('modal-submit-btn').textContent = '저장';
+    document.getElementById('f-company').value = task.company;
+    document.getElementById('f-project').value  = task.project;
+    document.getElementById('f-amount').value   = task.amount;
+    document.getElementById('f-month').value    = task.month;
+    document.getElementById('f-status').value   = task.status || '진행 전';
+    document.getElementById('f-note').value     = task.note;
+    document.getElementById('task-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('task-modal').classList.remove('open');
+    editingId = null;
+  }
+
+  function clearForm() {
+    ['f-company','f-project','f-amount','f-month','f-note'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('f-status').value = '진행 전';
+  }
+
+  // CRUD API calls
+  async function submitTask() {
+    const payload = {
+      company: document.getElementById('f-company').value.trim(),
+      project: document.getElementById('f-project').value.trim(),
+      amount: Number(document.getElementById('f-amount').value.trim()),
+      month: document.getElementById('f-month').value.trim(),
+      status: document.getElementById('f-status').value,
+      note: document.getElementById('f-note').value.trim()
+    };
+
+    if (!payload.company) { toast('협력사명을 입력해주세요.', 'error'); return; }
+    if (!payload.project) { toast('과제명을 입력해주세요.', 'error'); return; }
+    if (isNaN(payload.amount) || payload.amount < 0) { toast('개선금액을 올바르게 입력해주세요.', 'error'); return; }
+    if (!payload.month) { toast('목표월을 선택해주세요.', 'error'); return; }
+
+    try {
+      if (editingId) {
+        const res = await fetch(`/api/tasks/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          toast('과제가 수정되었습니다.', 'success');
+        }
+      } else {
+        const res = await fetch(`/api/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          toast('과제가 등록되었습니다.', 'success');
+        }
+      }
+      closeModal();
+      await loadTasks();
+    } catch (e) {
+      toast('저장 중 오류가 발생했습니다.', 'error');
+    }
+  }
+
+  function openConfirm(id) {
+    deleteId = id;
+    const task = tasks.find(t => t.id === id);
+    document.getElementById('confirm-task-name').textContent = task ? `[${task.company}] ${task.project}` : '';
+    document.getElementById('confirm-modal').classList.add('open');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirm-modal').classList.remove('open');
+    deleteId = null;
+  }
+
+  document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`/api/tasks/${deleteId}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast('과제가 삭제되었습니다.', 'success');
+        closeConfirm();
+        await loadTasks();
+      }
+    } catch (e) {
+      toast('삭제 중 오류가 발생했습니다.', 'error');
+    }
+  });
+
+  // Excel Upload
+  async function handleExcelUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      toast('파일을 업로드하는 중입니다...', 'success');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast(data.message, 'success');
+        await loadTasks();
+      } else {
+        toast(data.detail || '업로드 실패', 'error');
+      }
+    } catch (e) {
+      toast('업로드 중 오류가 발생했습니다.', 'error');
+    }
+    
+    // Reset file input
+    event.target.value = '';
+  }
+
+  // Chart Rendering
+  function renderChart() {
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    
+    // Aggregate amounts by month
+    const monthlyData = {};
+    tasks.forEach(t => {
+      if(!t.month) return;
+      monthlyData[t.month] = (monthlyData[t.month] || 0) + Number(t.amount);
+    });
+    
+    const sortedMonths = Object.keys(monthlyData).sort();
+    const amounts = sortedMonths.map(m => monthlyData[m]);
+    
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#e6edf3' : '#0f172a';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+    if (chartInstance) {
+      chartInstance.data.labels = sortedMonths;
+      chartInstance.data.datasets[0].data = amounts;
+      chartInstance.update();
+      return;
+    }
+
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sortedMonths,
+        datasets: [{
+          label: '개선금액 (만원)',
+          data: amounts,
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderColor: '#3b82f6',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: textColor, font: { family: 'Pretendard' } }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: { family: 'Pretendard' } }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: textColor, font: { family: 'Pretendard' } }
+          }
+        }
+      }
+    });
+  }
+
+  function updateChartColors() {
+    if(!chartInstance) return;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#e6edf3' : '#0f172a';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    
+    chartInstance.options.plugins.legend.labels.color = textColor;
+    chartInstance.options.scales.x.ticks.color = textColor;
+    chartInstance.options.scales.y.ticks.color = textColor;
+    chartInstance.options.scales.y.grid.color = gridColor;
+    chartInstance.update();
+  }
+
+  // Export CSV (Frontend side)
+  function exportCSV() {
+    if (tasks.length === 0) { toast('내보낼 데이터가 없습니다.', 'error'); return; }
+    const header = ['상태', '협력사명', '과제명', '개선금액(만원)', '목표월', '비고'];
+    const rows = tasks.map(t => [
+      `"${t.status}"`, `"${t.company}"`, `"${t.project}"`, t.amount, t.month, `"${t.note}"`
+    ]);
+    const csv = '\uFEFF' + [header, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `과제목록_${new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV 파일을 내보냈습니다.', 'success');
+  }
+
+  function toast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = type === 'success' ? '✅ ' + msg : type === 'error' ? '⚠ ' + msg : msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('task-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+  document.getElementById('confirm-modal').addEventListener('click', function(e) { if (e.target === this) closeConfirm(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeConfirm(); } });
+
+  // Init
+  loadTasks();
+</script>
+</body>
+</html>
